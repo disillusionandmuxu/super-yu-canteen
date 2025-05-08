@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摄像头拍照示例</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #f0f2f5;
+            font-family: Arial, sans-serif;
+        }
+
+        #contentHolder {
+            margin: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #video {
+            background: #000;
+            transform: scaleX(-1); /* 镜像翻转 */
+        }
+
+        #btn_snap {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        #btn_snap:hover {
+            background: #0056b3;
+        }
+
+        #imgXX {
+            margin-top: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            max-width: 400px;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>监控浏览</h2>
+    <div id="contentHolder">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+    <button id="btn_snap">拍照</button>
+    <div id="preview">
+        <img id="imgXX" src="" alt="拍照预览">
+    </div>
+    <div id="errorMsg" class="error"></div>
+
+    <script>
+        // 初始化元素
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const img = document.getElementById('imgXX');
+        const errorMsg = document.getElementById('errorMsg');
+        const btnSnap = document.getElementById('btn_snap');
+
+        // 设置尺寸
+        const videoWidth = 1280;
+        const videoHeight = 720;
+        
+        video.width = canvas.width = videoWidth;
+        video.height = canvas.height = videoHeight;
+        
+        const ctx = canvas.getContext('2d');
+
+        // 启动摄像头
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: videoWidth },
+                        height: { ideal: videoHeight },                        
+                    }
+                });
+                
+                video.srcObject = stream;
+                await video.play();
+                errorMsg.textContent = '';
+            } catch (error) {
+                handleCameraError(error);
+            }
+        }
+
+        // 拍照功能
+        function takePhoto() {
+            ctx.save();
+            ctx.scale(-1, 1); // 镜像翻转
+            ctx.drawImage(video, -videoWidth, 0, videoWidth, videoHeight);
+            ctx.restore();
+            
+            img.src = canvas.toDataURL('image/jpeg', 0.9);
+        }
+
+        // 错误处理
+        function handleCameraError(error) {
+            console.error('摄像头错误:', error);
+            let message = '无法访问摄像头';
+            
+            switch(error.name) {
+                case 'NotAllowedError':
+                    message = '请允许摄像头权限';
+                    break;
+                case 'NotFoundError':
+                    message = '未找到可用摄像头';
+                    break;
+                case 'NotReadableError':
+                    message = '摄像头被其他程序占用';
+                    break;
+            }
+            
+            errorMsg.textContent = message;
+        }
+
+        // 事件绑定
+        btnSnap.addEventListener('click', takePhoto);
+
+        // 初始化
+        initCamera();
+    </script>
+</body>
+</html>
